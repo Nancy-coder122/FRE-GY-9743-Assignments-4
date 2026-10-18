@@ -108,20 +108,34 @@ class Interpolator1DPCP(Interpolator1D):
         assert self.extrap_method_ == ExtrapMethod.FLAT
 
     def interpolate(self, x: float) -> float:
-        #TODO
-        pass
+        index = np.searchsorted(self.axis1_, x, side='left')
+        return float(self.values_[min(index, self.length_ - 1)])
 
     def integrate(self, start_x: float, end_x: float) -> float:
-        #TODO
-        pass
+        return float(np.dot(
+            self.gradient_of_integrated_value_wrt_ordinate(start_x, end_x),
+            self.values_,
+        ))
 
     def gradient_wrt_ordinate(self, x: float) -> np.ndarray:
-        #TODO
-        pass
+        weights = np.zeros(self.length_)
+        index = np.searchsorted(self.axis1_, x, side='left')
+        weights[min(index, self.length_ - 1)] = 1.0
+        return weights
 
     def gradient_of_integrated_value_wrt_ordinate(self, start_x: float, end_x: float) -> np.ndarray:
-        #TODO
-        pass
+        if end_x < start_x:
+            return -self.gradient_of_integrated_value_wrt_ordinate(end_x, start_x)
+
+        weights = np.zeros(self.length_)
+        boundaries = np.concatenate((
+            [start_x], self.axis1_[(self.axis1_ > start_x) & (self.axis1_ < end_x)],
+            [end_x],
+        ))
+        for left, right in zip(boundaries[:-1], boundaries[1:]):
+            index = np.searchsorted(self.axis1_, (left + right) / 2, side='left')
+            weights[min(index, self.length_ - 1)] += right - left
+        return weights
 
 
 
